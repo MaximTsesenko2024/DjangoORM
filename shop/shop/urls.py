@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from shop.product.views import *
+from product.views import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,6 +25,29 @@ urlpatterns = [
     path('user/registration', add_user),
     path('user/login', enter_user),
     path('user/logout', exit_user),
+    path('user/update/<user_id>', update_user),
+    path('user/delete',delete_user_self),
+    path('user/list/delete/<id_user>', delete_user_admin),
+    path('user/list/update/<id_user>', update_user_admin),
+    path('user/list/<id_user>', select_user_admin),
+    path('user/list', select_list_user),
+    path('user/repair', repair_password_post),
+    path('user/create_password/<user_id>', create_password),
+    path('product/category/list', list_categories_get),
+    path('product/category/update', update_category_get),
+    path('product/category/create', add_category_get),
+    path('product/category/delete/<id_category>', delete_category_get),
+    path('product/category/<id_category>',category_get),
     path('product/list', select_products_list_get),
-
+    path('product/create', create_product),
+    path('product/update/<id_product>', update_product),
+    path('product/delete/<id_product>', delete_product),
+    path('product/select_product_get/<id_poduct>', select_product_get),
+    path('product/car/<id_product>', car_post),
+    path('product/buy/<user_id>', car_post),
+    path('product/payment/<user_id>', payment_post),
+    path('product/shop/update/<shop_id>',update_shop_get),
+    path('product/shop/delete/<shop_id>', delete_shop_get),
+    path('product/shop/list', select_shop_list),
+    path('product/shop/<shop_id>', select_shop_get),
 ]
