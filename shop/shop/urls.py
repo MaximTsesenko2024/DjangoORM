@@ -42,7 +42,7 @@ urlpatterns = [
     path('product/create', create_product),
     path('product/update/<id_product>', update_product),
     path('product/delete/<id_product>', delete_product),
-    path('product/select_product_get/<id_poduct>', select_product_get),
+    path('product/<id_product>', select_product_get),
     path('product/car/<id_product>', car_post),
     path('product/buy/<user_id>', car_post),
     path('product/payment/<user_id>', payment_post),

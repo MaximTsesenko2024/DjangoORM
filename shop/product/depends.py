@@ -8,7 +8,8 @@ from .models import User
 def find_user_by_id(user_id: int = -1) -> User | None:
     if user_id < 0:
         return None
-    user = User.objects.filter(id=user_id)
+    user = User.objects.get(id=user_id)
+    print(type(user))
     return user
 
 
@@ -19,7 +20,7 @@ def get_token(request: WSGIRequest):
     return token
 
 
-async def get_current_user(request: WSGIRequest):
+def get_current_user(request: WSGIRequest):
     token = get_token(request)
     if token is None:
         return None

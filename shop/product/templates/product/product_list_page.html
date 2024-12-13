@@ -6,27 +6,34 @@
 </head>
 <body>
         <h1> {{title}}  </h1>
-        <form method="get" action="/product/list">
+        <form>
             <input type="search" id="mySearch" name="q" placeholder="Поиск товаров" size="30" />
             <button>Поиск</button>
         </form>
-        {% if service %}
-        <p> Страницы:
-            {% for i in service['pages'] %}
-                <a href="?page={{i}}">{{i}}</a>
-            {% endfor %}
-            </p>
-        {% endif %}
-        {% if products %}
-            <ul>
-            {% for i in products %}
-              <li><img src="data:image/{{i['format_file']}}; base64, {{ i['image_str'] | safe }}" alt="{{ i['name']}}"/>
-                  <a href="/product/{{i['id']}}"> {{ i['name']}} </a> Цена: {{i['price']}} рублей</li>
-            {% endfor %}
+                    <ul>
+        {% for product in page_obj %}
+            <li><img src="data:image/{{product.format_file}}; base64,  {{product.image_str}} | safe " alt="{{ product.name}}"/>
+                  <a href="/product/{{product.id}}"> {{ product.name}} </a> Цена: {{product.price}} рублей</li>
+        {% empty %}
+            <p>Нет товаров</p>
+        {% endfor %}
             </ul>
-        {% else %}
-            <h1> Нет доступных товаров </h1>
-        {% endif %}
+                 <div class="pagination">
+        <p>Страницы:</p>
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            {% endif %}
+            {% for i in page_obj.paginator.page_range %}
+                {% if page_obj.number == i %}
+                    <a href="#"> {{i}}</a>
+                {% else %}
+                    <a href="?page={{i}}"> {{i}}</a>
+                {% endif %}
+             {% endfor %}
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">Next</a>
+            {% endif %}
+    </div>
         {% if is_staff %}
             <a href="/product/create"> Добавить</a>
         {% endif %}

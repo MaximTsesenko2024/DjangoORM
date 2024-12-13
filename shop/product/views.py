@@ -1,33 +1,33 @@
 import math
 from datetime import datetime, date
 from http.client import HTTPException
-
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from .depends import get_current_user, find_user_by_id
 from .autf import verify_password, get_password_hash, create_access_token
-from .models import User, Categories, ProductModel, BuyerProd
+from .models import User, Categories, ProductModel, BuyerProd, Shops
 from .forms import Registration, SelectUser, UpdateUser, AdminUser, RepairPassword, CreatePassword, Product
 import base64
 import os
 from PIL import Image
+
+class ProductView_list():
+    def __init__(self, name, price, id_prod, image_str, format_file):
+        self.name = name
+        self.price = price
+        self.id = id_prod
+        self.image_str = image_str
+        self.format_file = format_file
+
 
 cars = {}
 
 
 # Create your views here.
 
-def pagination(list_product: list, page: int, size: int):
-    offset_min = page * size
-    offset_max = (page + 1) * size
-    result = list_product[offset_min:offset_max], {
-        "page": page,
-        "size": size,
-        "total": math.ceil(len(list_product) / size) - 1,
-    }
-    return result
 
 async def check_user(name: str, password: str, ):
     if name == '':
@@ -97,7 +97,7 @@ def add_user(request: WSGIRequest):
 
 def enter_user(request: WSGIRequest):
     info = {'title': 'Вход'}
-    if request.method == 'post':
+    if request.method == 'POST':
         form = SelectUser(request.POST)
         if form.is_valid():
             username = form.cleaned_data['username']
@@ -120,7 +120,7 @@ def enter_user(request: WSGIRequest):
 def exit_user(request: WSGIRequest):
     info = {'title': 'Выход'}
     user = get_current_user(request)
-    if request.method == 'post':
+    if request.method == 'POST':
         if user is not None:
             info['message'] = f'Пользователь: {user.username} вышел из системы'
             response = render(request, 'users/logout.html', info)
@@ -142,7 +142,7 @@ def update_user(request: WSGIRequest, user_id: int = -1):
         HttpResponseRedirect('/user/login')
     elif user_id != user.id:
         return HTTPException(401, detail='Нет доступа')
-    if request.method == 'post':
+    if request.method == 'POST':
         form = UpdateUser(request.POST)
         # адрес электронной почты
         email = form.cleaned_data['email']
@@ -187,7 +187,7 @@ def delete_user_admin(request: WSGIRequest, id_user: int):
     if user is None:
         return HTTPException(status_code=404, detail='Пользователь не найден')
     else:
-        # if request.method == 'post':
+        # if request.method == 'POST':
         #     buy_products = BuyerProd.filter(user=user.id)
         #     if buy_products is not None:
         #         BuyerProd.filter(user=user.id).delete()
@@ -214,7 +214,7 @@ def update_user_admin(request: WSGIRequest, id_user: int = -1):
     if user is None:
         return HTTPException(status_code=404, detail='Пользователь не найден')
     else:
-        if request.method == 'post':
+        if request.method == 'POST':
             form = AdminUser(request.POST)
             if form.is_valid():
                 email = form.cleaned_data['email']
@@ -224,10 +224,10 @@ def update_user_admin(request: WSGIRequest, id_user: int = -1):
                 admin = form.cleaned_data['admin']
                 bis_active, bis_staff, badmin = is_active == 'Да', is_staff == 'Да', admin == 'Да'
                 User.objects.filter(id=id_user).update(email=email,
-                                                     day_birth=day_birth,
-                                                     is_active=bis_active,
-                                                     is_staff=bis_staff, admin=badmin,
-                                                     updated_at=datetime.now())
+                                                       day_birth=day_birth,
+                                                       is_active=bis_active,
+                                                       is_staff=bis_staff, admin=badmin,
+                                                       updated_at=datetime.now())
                 return HttpResponseRedirect('/user/list')
         info['user'] = user
         info['form'] = AdminUser()
@@ -268,7 +268,7 @@ def select_list_user(request: WSGIRequest):
 
 def repair_password_post(request: WSGIRequest):
     info = {'title': 'Востановление пароля'}
-    if request.method == 'post':
+    if request.method == 'POST':
         form = RepairPassword(request.POST)
         if form.is_valid():
             username = form.cleaned_data['username']
@@ -288,8 +288,8 @@ def create_password(request: WSGIRequest, user_id: int = -1):
     if user is None:
         info['message'] = 'Пользователь не найден'
         return HttpResponseRedirect('/user')
-    if request.method == 'post':
-        form= CreatePassword(request.POST)
+    if request.method == 'POST':
+        form = CreatePassword(request.POST)
         if form.is_valid():
             password = form.cleaned_data['password']
             repeat_password = form.cleaned_data['repeat_password']
@@ -311,11 +311,12 @@ def create_password(request: WSGIRequest, user_id: int = -1):
     info['form'] = CreatePassword()
     return render(request, "users/create_new_password.html", info)
 
+
 def image_to_str(product: Product, key: str):
     if key == 'list':
-        file_path = os.path.join("./templates/product/image/" + product.name, 'small_' + product.img)
+        file_path = os.path.join("./product/templates/product/image/" + product.name, 'small_' + product.img)
     else:
-        file_path = os.path.join("./templates/product/image/" + product.name, product.img)
+        file_path = os.path.join("./product/templates/product/image/" + product.name, product.img)
     #print(os.path.exists(file_path), file_path)
     try:
         with open(file_path, "rb") as image_file:
@@ -397,7 +398,7 @@ def update_category_get(request: WSGIRequest):
         Categories.objects.filter(id=id_category).update(parent=int(parent))
         info['message'] = 'Обновлено'
         return HttpResponseRedirect(f'/product/category/{id_category}')
-    return render(request,'product/category_update.html', info)
+    return render(request, 'product/category_update.html', info)
 
 
 # создание новой категории
@@ -424,7 +425,7 @@ def add_category_get(request: WSGIRequest):
         else:
             Categories.objects.create(name=name, parent=int(parent))
             return HttpResponseRedirect('/product/category/list')
-    return render(request,'product/category_create.html', info)
+    return render(request, 'product/category_create.html', info)
 
 
 # удаление категории
@@ -437,7 +438,7 @@ def delete_category_get(request: WSGIRequest, id_category: int):
         info['message'] = 'У вас нет прав'
     else:
         info['display'] = 'Ok'
-        if request.method == 'post':
+        if request.method == 'POST':
             Categories.filter(id=id_category).delete()
             return HttpResponseRedirect('/product/category/list')
         categories = list(Categories.objects.all())
@@ -449,7 +450,7 @@ def delete_category_get(request: WSGIRequest, id_category: int):
             info['children'] = children
         else:
             info['delete'] = 1
-    return render(request,'product/category_delete.html', info)
+    return render(request, 'product/category_delete.html', info)
 
 
 # просмотр категории
@@ -463,18 +464,22 @@ def category_get(request: WSGIRequest, id_category: int):
     info['children'] = get_categories_subgroups(categories, id_category)
     info['category'] = category
     info['categories'] = categories
-    return render(request,'product/category.html', info)
+    return render(request, 'product/category.html', info)
 
 
 # Обработка таблицы Product
-def select_products_list_get(request: WSGIRequest, category: str = '', q: str = '',
-                                   page: str = ''):
+def select_products_list_get(request: WSGIRequest):
     info = {'title': 'Список товаров'}
     user = get_current_user(request)
-    category = request.GET.get('category')
-    q=request.GET.get('q')
-    page = request.GET.get('page')
-    if page == '':
+    category = request.GET.get('category', '')
+    q = request.GET.get('q', '')
+    page = request.GET.get('page', '0')
+    print(page)
+    if q is None:
+        q = ''
+    if category is None:
+        category = ''
+    if page is None:
         page = 0
     else:
         page = int(page)
@@ -484,35 +489,40 @@ def select_products_list_get(request: WSGIRequest, category: str = '', q: str = 
         info['is_staff'] = 'Ok'
     if q != '':
         print('Только имя', q)
-        querty = Q(name__icontains = q)
-        querty = querty | Q(description__icontains = q)
+        querty = Q(name__icontains=q)
+        querty = querty | Q(description__icontains=q)
         print(querty)
         products = ProductModel.objects.filter(querty).all()
     elif category != '':
         products = ProductModel.objects.filter(category=int(category)).all()
     else:
         products = ProductModel.objects.all()
-    if products is not None:
+    if len(products)>0:
         product_list = []
         for product in products:
-            print(product.name)
+            #print(product.name)
             image_str, format_file = image_to_str(product, 'list')
-            #print(product.name, image_str)
-            product_list.append({'name': product.name, 'price': product.price, 'id': product.id, 'image_str': image_str,
-                                 'format_file': format_file})
-        info['products'], service = pagination(product_list, page, 4)
-        print(service)
-        pages = [x for x in range(service['total'] + 1)]
-        info['service'] = {'page': service['page'], 'size': service['size'], 'pages': pages}
-        print(info['service'])
-    return render(request,'product/product_list_page.html', info)
+            prod_item = ProductView_list(product.name, product.price, product.id,image_str,format_file)
+            product_list.append(prod_item)
+            paginator = Paginator(product_list, 4)
+            page_number = request.GET.get('page', 1)
+            try:
+                page_obj = paginator.get_page(page_number)
+            except PageNotAnInteger:
+                page_obj = paginator.page(1)
+            except EmptyPage:
+                page_obj = paginator.page(paginator.num_pages)
+            info['page_obj'] = page_obj
+    return render(request, 'product/product_list_page.html', info)
 
 
 # Создание нового продукты
 def create_product(request: WSGIRequest):
     info = {'request': request, 'title': 'Добавление товара'}
+
     #print(name, item_number, description, price, count, category, file.filename)
-    user= get_current_user(request)
+    user = get_current_user(request)
+    print(user)
     if user is None:
         info['message'] = 'Вы не авторизованы. Пройдите авторизацию.'
     elif not user.is_staff:
@@ -520,41 +530,48 @@ def create_product(request: WSGIRequest):
     else:
         info['display'] = 'Ok'
         info['categories'] = list(Categories.objects.all())
-        if request.method == 'post':
+        print('создание', request.method)
+        if request.method == 'POST':
             name = request.POST.get('name')
             item_number = request.POST.get('item_number')
             description = request.POST.get('description')
-            price = float(request.POST.get('description'))
+            price = float(request.POST.get('price'))
             count = int(request.POST.get('count'))
             category = request.POST.get('category')
-            file = request.FILES.get('file')
+            # for filename, file in request.FILES.items():
+            #     name_f = request.FILES[filename].name
+            #     print(name_f)
+            # file = request.FILES['btn-add_product']
+            # file = None
+            print(name, item_number, description)
             if name == '':
                 info['message'] = 'Поле имя не может быть пустым'
-            try:
-                if not os.path.exists("./templates/product/image/" + name):
-                    os.mkdir("./templates/product/image/" + name)
-
-                contents = file.file.read()
-                file_name = file.filename
-                with open("./templates/product/image/" + name + '/' + file_name, "wb") as f:
-                    f.write(contents)
-            except Exception:
-                raise HTTPException(status_code=500, detail='Something went wrong')
-            finally:
-                file.file.close()
-            image = Image.open("./templates/product/image/" + name + '/' + file_name)
-            image.thumbnail(size=(100, 100))
-            image.save("./templates/product/image/" + name + '/small_' + file_name)
+                return render(request, 'product/add_product_page.html', info)
+            # try:
+            #     if not os.path.exists("./product/templates/product/image/" + name):
+            #         os.mkdir("./product/templates/product/image/" + name)
+            #
+            #     contents = file.read()
+            #     file_name = file.filename
+            #     with open("./product/templates/product/image/" + name + '/' + file_name, "wb") as f:
+            #         f.write(contents)
+            # except Exception:
+            #     raise HTTPException(status_code=500, detail='Something went wrong')
+            # finally:
+            #     file.close()
+            # image = Image.open("./product/templates/product/image/" + name + '/' + file_name)
+            # image.thumbnail(size=(100, 100))
+            # image.save("./product/templates/product/image/" + name + '/small_' + file_name)
             if count > 0:
                 bl = True
             else:
                 bl = False
             ProductModel.objects.create(name=name, description=description,
-                                      price=price, count=count,
-                                      is_active=count > 0, category=int(category), item_number=item_number,
-                                      img=file_name)
+                                        price=price, count=count,
+                                        is_active=count > 0, category=int(category), item_number=item_number,
+                                        img='')
             return HttpResponseRedirect('/product/list')
-    return render(request,'product/add_product_page.html', info)
+    return render(request, 'product/add_product_page.html', info)
 
 
 def update_product(request: WSGIRequest, id_product: int = -1):
@@ -566,30 +583,30 @@ def update_product(request: WSGIRequest, id_product: int = -1):
         return HttpResponseRedirect('/product/list')
     else:
         product = ProductModel.objects.get(id=id_product)
-        if request.method == 'post':
-            file=request.FILES.get('file')
+        if request.method == 'POST':
+            file = request.FILES.get('file')
             try:
-                if not os.path.exists("./templates/product/image/" + product.name):
-                    os.mkdir("./templates/product/image/" + product.name)
+                if not os.path.exists("./product/templates/product/image/" + product.name):
+                    os.mkdir("./product/templates/product/image/" + product.name)
 
                 contents = file.file.read()
                 file_name = file.filename
-                with open("./templates/product/image/" + product.name + '/' + file_name, "wb") as f:
+                with open("./product/templates/product/image/" + product.name + '/' + file_name, "wb") as f:
                     f.write(contents)
             except Exception:
                 raise HTTPException(status_code=500, detail='Something went wrong')
             finally:
                 file.file.close()
-            image = Image.open("./templates/product/image/" + product.name + '/' + file_name)
+            image = Image.open("./product/templates/product/image/" + product.name + '/' + file_name)
             image.thumbnail(size=(100, 100))
-            image.save("./templates/product/image/" + product.name + '/small_' + file_name)
+            image.save("./product/templates/product/image/" + product.name + '/small_' + file_name)
             ProductModel.objects.filter(id=id_product).update(img=file_name)
             return HttpResponseRedirect(f'/product/{id_product}')
     info['categories'] = list(Categories.objects.all())
     info['product'] = product
     info['display'] = 'Ok'
     info['image_str'], info['format_file'] = image_to_str(product, 'page')
-    return render(request, 'update_image_product_page.html', info)
+    return render(request, 'product/update_image_product_page.html', info)
 
 
 def delete_product(request: WSGIRequest, id_product: int = -1):
@@ -600,21 +617,21 @@ def delete_product(request: WSGIRequest, id_product: int = -1):
     elif not user.is_staff:
         return HttpResponseRedirect('/product/list')
     else:
-        if request.method == 'post':
+        if request.method == 'POST':
             product_use = BuyerProd.objects.filter(
                 product=id_product).all()
             product = ProductModel.objects.filter(id=id_product).first()
             if product_use is None:
-                os.remove("./templates/product/image/" + product.name)
+                os.remove("./product/templates/product/image/" + product.name)
                 ProductModel.objects.filter(id=id_product).delete()
                 return HttpResponseRedirect(f'/product/list')
             elif user.admin:
                 BuyerProd.objects.filter(product=id_product).delete()
-                os.remove("./templates/product/image/" + product.name)
+                os.remove("./product/templates/product/image/" + product.name)
                 ProductModel.objects.filter(id=id_product).delete()
             else:
                 info['message'] = 'Товар уже покупали. Для удаления обратитесь к администратору'
-                return render(request,'delete_product_page.html', info)
+                return render(request, 'delete_product_page.html', info)
         product = ProductModel.objects.filter(id=id_product).first()
         categories = list(Categories.objects.all())
         info['category'] = find_category(categories, product.category)
@@ -637,8 +654,8 @@ def select_product_get(request: WSGIRequest, id_product: int = -1):
         if user is not None:
             info['is_staff'] = user.is_staff
     else:
-        return HTTPException(404, detail='Товар отсутствует')
-    return render(request,'product_page.html', info)
+        return HTTPException(404)
+    return render(request, 'product/product_page.html', info)
 
 
 def car_post(request: WSGIRequest, id_product: int = -1):
@@ -649,13 +666,13 @@ def car_post(request: WSGIRequest, id_product: int = -1):
     product = ProductModel.objects.filter(id=id_product).first()
     if product is None:
         return HTTPException(404, 'Товар не найден')
-    if car_user.count < 1:
-        info['message'] = 'Требуемое количество товара не может быть меньше 1'
-    else:
-        if request.method == 'post':
-            car_user = int(request.POST.get('count'))
+    if request.method == 'POST':
+        count = int(request.POST.get('count'))
+        if count < 1:
+            info['message'] = 'Требуемое количество товара не может быть меньше 1'
+        else:
             info['user'] = user
-            new_count = product.count - car_user.count
+            new_count = product.count - count
             if new_count < 0:
                 info['message'] = 'Не достаточно товара'
                 info['count'] = product.count
@@ -664,22 +681,31 @@ def car_post(request: WSGIRequest, id_product: int = -1):
                 product = ProductModel.objects.filter(id=id_product).first()
             info['product'] = product
             if user.id in cars.keys():
-                cars[user.id].append((product.id, product.name, product.price, car_user.count))
+                cars[user.id].append((product.id, product.name, product.price, count))
             else:
-                cars[user.id] = [(product.id, product.name, product.price, car_user.count), ]
-            return render(request,'product/car.html', info)
+                cars[user.id] = [(product.id, product.name, product.price, count), ]
+            return render(request, 'product/car.html', info)
         info['product'] = product
         info['user'] = user
         info['count'] = 1
         return render(request, 'product/car.html', info)
-    return HttpResponseRedirect('/product')
+    return HttpResponseRedirect('/product/list')
 
 
 def buy_post(request: WSGIRequest, user_id: int = -1):
     info = {'title': 'Оплата товара'}
+    cost = 0
     user = get_current_user(request)
-    if request.method == 'post':
-        cost = 0
+    delet = request.GET.get('delet')
+    if delet is None:
+        delet = -1
+    else:
+        delet = int(delet)
+    shop = request.GET.get('shop')
+    if shop is None:
+        shop = ''
+    if request.method == 'POST':
+
         car = cars[user_id]
         info['car'] = car
         info['user'] = user
@@ -689,42 +715,51 @@ def buy_post(request: WSGIRequest, user_id: int = -1):
         print(shop)
         if shop == '':
             info['message'] = 'Выберите магазин'
-            return render(request,'buy.html', info)
-    else:
-        if delet > -1:
-            for i in range(len(cars[user_id])):
-                if cars[user_id][i][0] == delet:
-                    product = ProductModel.objects.filter(id=delet).first()
-                    ProductModel.objects.filter(id=delet).update(count=product.count + cars[user_id][i][3], is_active=True)
-                    cars[user_id].pop(i)
-        if user_id not in cars.keys():
-            return HttpResponseRedirect('/product/list')
-        car = cars[user_id]
-        info['car'] = car
-        info['user'] = user
-        info['shops'] = Shops.objects.all()
-        for item in car:
-            cost += item[2] * item[3]
-        info['cost'] = cost
-        return render(request,'product/buy.html', info)
+            return render(request, 'buy.html', info)
+        else:
+            if delet > -1:
+                for i in range(len(cars[user_id])):
+                    if cars[user_id][i][0] == delet:
+                        product = ProductModel.objects.filter(id=delet).first()
+                        ProductModel.objects.filter(id=delet).update(count=product.count + cars[user_id][i][3],
+                                                                     is_active=True)
+                        cars[user_id].pop(i)
+            if user_id not in cars.keys():
+                return HttpResponseRedirect('/product/list')
+            car = cars[user_id]
+            info['car'] = car
+            info['user'] = user
+            info['shops'] = Shops.objects.all()
+
+            for item in car:
+                cost += item[2] * item[3]
+            info['cost'] = cost
+            return render(request, 'product/buy.html', info)
 
     return HttpResponseRedirect(f'/product/payment/{user_id}?shop={shop}')
 
 
-def payment_post(request: WSGIRequest, user_id: int = -1,shop: str = ''):
-    user=get_current_user(request)
-    if request.method == 'post':
-        max_operation = (BuyerProd.annotate(max_operation=Max("id_operation")).values_list("max_operation", flat=True))[0]
+def payment_post(request: WSGIRequest, user_id: int = -1):
+    user = get_current_user(request)
+    info = {'title': 'Оплата заказов'}
+    shop = request.GET.get('shop')
+    if shop is None:
+        shop = '-1'
+    if request.method == 'POST':
+        shop = request.POST.get('shop')
+        if shop is None:
+            shop = '-1'
+        max_operation = BuyerProd.objects.all().max('id_operation')
         if max_operation is None:
             max_operation = 1
         else:
             max_operation = max_operation + 1
-        shop_sel = Shops.objects.get(id = int(shop))
+        shop_sel = Shops.objects.get(id=int(shop))
         for item in cars[user_id]:
             prod = ProductModel.objects.get(id=item[0])
             BuyerProd.objects.create(user=user, product=prod, id_operation=max_operation, id_shop=shop_sel)
         cars.pop(user_id)
-        return HTMLResponse('Спасибо за покупку')
+        return HttpResponse('Спасибо за покупку')
     cost = 0
     car = cars[user_id]
     info['car'] = car
@@ -732,9 +767,10 @@ def payment_post(request: WSGIRequest, user_id: int = -1,shop: str = ''):
     for item in car:
         cost += item[2] * item[3]
     info['cost'] = cost
-    shop = Shops.objects.get(id = int(shop))
+    shop = Shops.objects.get(id=int(shop))
     info['shop'] = shop
-    return render(request,'payment.html', info)
+    return render(request, 'payment.html', info)
+
 
 def create_shop(request: WSGIRequest):
     info = {'request': request, 'title': 'Добавление магазина'}
@@ -745,12 +781,12 @@ def create_shop(request: WSGIRequest):
         return HttpResponseRedirect('/main')
     else:
         info['display'] = 'Ok'
-        if request.method == 'post':
+        if request.method == 'POST':
             name = request.POST.get('name')
             location = request.POST.get('location')
             Shops.objects.create(name=name, location=location)
             return HttpResponseRedirect('/product/shop/list')
-        return render(request,'product/add_shop_page.html', info)
+        return render(request, 'product/add_shop_page.html', info)
 
 
 def update_shop_get(request: WSGIRequest, shop_id: int = -1):
@@ -762,7 +798,7 @@ def update_shop_get(request: WSGIRequest, shop_id: int = -1):
         return HttpResponseRedirect('/main')
     else:
         info['display'] = 'Ok'
-        if request.method == 'post':
+        if request.method == 'POST':
             name = request.POST.get('name')
             location = request.POST.get('location')
             Shops.objects.filter(id=shop_id).update(name=name, location=location)
@@ -771,7 +807,7 @@ def update_shop_get(request: WSGIRequest, shop_id: int = -1):
         if shop is None:
             return HttpResponseRedirect('/product/shop/list')
         info['shop'] = shop
-        return render(request,'product/update_shop_page.html', info)
+        return render(request, 'product/update_shop_page.html', info)
 
 
 def delete_shop_get(request: WSGIRequest, shop_id: int = -1):
@@ -783,26 +819,26 @@ def delete_shop_get(request: WSGIRequest, shop_id: int = -1):
         return HttpResponseRedirect('/main')
     else:
         info['display'] = 'Ok'
-        if request.method == 'post':
+        if request.method == 'POST':
             Shops.objects.filter(id=shop_id).delete()
             return HttpResponseRedirect('/product/shop/list')
         shop = Shops.objects.filter(id=shop_id).first()
         if shop is None:
             return HttpResponseRedirect('/product/shop/list')
         info['shop'] = shop
-        return render(request,'product/delete_shop_page.html', info)
+        return render(request, 'product/delete_shop_page.html', info)
 
 
 def select_shop_list(request: WSGIRequest):
     info = {'request': request, 'title': 'Список магазинов'}
-    user=get_current_user(request)
-    shops =Shops.objects.all()
+    user = get_current_user(request)
+    shops = Shops.objects.all()
     if user is None:
         pass
     elif user.is_staff:
         info['display'] = 'Ok'
     info['shops'] = shops
-    return render(request,'product/shop_list_page.html', info)
+    return render(request, 'product/shop_list_page.html', info)
 
 
 def select_shop_get(request: WSGIRequest, shop_id: int = -1):
@@ -816,11 +852,11 @@ def select_shop_get(request: WSGIRequest, shop_id: int = -1):
     if shop is None:
         return HttpResponseRedirect('/product/shop/list')
     info['shop'] = shop
-    return render(request,'product/shop_page.html', info)
+    return render(request, 'product/shop_page.html', info)
 
 
 def welcome(request: WSGIRequest, category: int = -1,
-                  q: str = ''):
+            q: str = ''):
     user = get_current_user(request)
     info = {'request': request, 'title': 'Главная страница'}
     info['name'] = 'Вход не выполнен'
@@ -832,9 +868,9 @@ def welcome(request: WSGIRequest, category: int = -1,
         info['name'] = 'Вход не выполнен'
     info['categories'] = Categories.objects.all()
     if category > -1 and q != '':
-        return RedirectResponse(f"/product/list?category={category}&q={q}")
+        return HttpResponseRedirect(f"/product/list?category={category}&q={q}")
     elif category > -1:
-        return RedirectResponse(f"/product/list?category={category}")
+        return HttpResponseRedirect(f"/product/list?category={category}")
     elif q != '':
-        return RedirectResponse(f"/product/list?q={q}")
+        return HttpResponseRedirect(f"/product/list?q={q}")
     return render(request, "product/main.html", info)
