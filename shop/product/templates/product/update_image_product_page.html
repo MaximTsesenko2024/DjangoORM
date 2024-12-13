@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="./app/templates/product/style.css">
     <meta charset="UTF-8">
     <title>{{title}}</title>
 </head>
@@ -9,15 +8,14 @@
     <h1>{{title}}</h1>
         {% if display %}
 
-            <form method="post">
-            {% csrf_token %}
+            <form method="post"  enctype="multipart/form-data">
+                {% csrf_token %}
                     <img src="data:image/{{format_file}}; base64, {{ image_str | safe }}" alt="{{ product.name}}"/>
                         <h2> {{ product.name}} </h2>
-                         <label for="file"> Изменить изображение </label>
-                        <input type="file" id="file" name="file">
+                         <label for="img"> Изменить изображение </label>
+                        <input type="file" id="img" name="img">
                         <p></p>
-                    <button type="submit">Изменить</button>
-
+            <button type="submit">Изменить</button>
             </form>
             <p></p>
 

@@ -42,7 +42,7 @@ class ProductModel(models.Model):
     # участие в акции
     action = models.BooleanField(default=False)
     # картинка товара
-    img = models.TextField()
+    img = models.CharField(max_length=255)
     # категория товаров
     category = models.ForeignKey('Categories', on_delete=models.CASCADE)
 

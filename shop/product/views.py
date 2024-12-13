@@ -9,10 +9,12 @@ from django.shortcuts import render, redirect
 from .depends import get_current_user, find_user_by_id
 from .autf import verify_password, get_password_hash, create_access_token
 from .models import User, Categories, ProductModel, BuyerProd, Shops
-from .forms import Registration, SelectUser, UpdateUser, AdminUser, RepairPassword, CreatePassword, Product
+from .forms import Registration, SelectUser, UpdateUser, AdminUser, RepairPassword, CreatePassword, Product, \
+    ProductUpdate
 import base64
 import os
 from PIL import Image
+
 
 class ProductView_list():
     def __init__(self, name, price, id_prod, image_str, format_file):
@@ -497,12 +499,12 @@ def select_products_list_get(request: WSGIRequest):
         products = ProductModel.objects.filter(category=int(category)).all()
     else:
         products = ProductModel.objects.all()
-    if len(products)>0:
+    if len(products) > 0:
         product_list = []
         for product in products:
             #print(product.name)
             image_str, format_file = image_to_str(product, 'list')
-            prod_item = ProductView_list(product.name, product.price, product.id,image_str,format_file)
+            prod_item = ProductView_list(product.name, product.price, product.id, image_str, format_file)
             product_list.append(prod_item)
             paginator = Paginator(product_list, 4)
             page_number = request.GET.get('page', 1)
@@ -582,15 +584,48 @@ def update_product(request: WSGIRequest, id_product: int = -1):
     elif not user.is_staff:
         return HttpResponseRedirect('/product/list')
     else:
+        if request.method == 'POST':
+            form = ProductUpdate(request.POST)
+            if form.is_valid():
+                description = form.cleaned_data['description']
+                item_number = form.cleaned_data['item_number']
+                price = float(form.cleaned_data['price'])
+                count = int(form.cleaned_data['count'])
+                category = form.cleaned_data['category']
+                product = ProductModel.objects.get(id=id_product)
+                print(product.name)
+                ProductModel.objects.get(id=id_product).update(description=description,
+                                                               price=price, count=count,
+                                                               is_active=count > 0,
+                                                               category=int(category),
+                                                               item_number=item_number)
+
+                return HttpResponseRedirect(f'/product/{id_product}')
+    product = ProductModel.objects.get(id=id_product)
+    info['categories'] = list(Categories.objects.all())
+    info['product'] = product
+    info['display'] = 'Ok'
+    info['image_str'], info['format_file'] = image_to_str(product, 'page')
+    return HttpResponseRedirect(f'/product/{id_product}')
+
+
+def update_image_product(request: WSGIRequest, id_product: int = -1):
+    info = {'title': 'Изменение описания товара'}
+    user = get_current_user(request)
+    if user is None:
+        return HttpResponseRedirect('/user/login')
+    elif not user.is_staff:
+        return HttpResponseRedirect('/product/list')
+    else:
         product = ProductModel.objects.get(id=id_product)
         if request.method == 'POST':
-            file = request.FILES.get('file')
+            file=request.FILES['img']
             try:
                 if not os.path.exists("./product/templates/product/image/" + product.name):
                     os.mkdir("./product/templates/product/image/" + product.name)
 
-                contents = file.file.read()
-                file_name = file.filename
+                contents = file.read()
+                file_name = file.name
                 with open("./product/templates/product/image/" + product.name + '/' + file_name, "wb") as f:
                     f.write(contents)
             except Exception:
@@ -605,7 +640,8 @@ def update_product(request: WSGIRequest, id_product: int = -1):
     info['categories'] = list(Categories.objects.all())
     info['product'] = product
     info['display'] = 'Ok'
-    info['image_str'], info['format_file'] = image_to_str(product, 'page')
+    #info['image_str'], info['format_file'] = image_to_str(product, 'page')
+    #info['form']=ImageInput()
     return render(request, 'product/update_image_product_page.html', info)
 
 

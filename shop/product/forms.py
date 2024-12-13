@@ -1,7 +1,6 @@
 from django import forms
-from .models import User
+from .models import User, ProductModel
 from datetime import date
-
 
 
 class AdminUser(forms.Form):
@@ -15,6 +14,7 @@ class AdminUser(forms.Form):
     is_staff = forms.CharField(max_length=255)
     # Флаг принадлежности к администраторам
     admin = forms.CharField(max_length=255)
+
 
 class Registration(forms.Form):
     username = forms.CharField(max_length=255)
@@ -42,10 +42,19 @@ class RepairPassword(forms.Form):
 class CreatePassword(forms.Form):
     password = forms.CharField(max_length=255)
     repeat_password = forms.CharField(max_length=255)
-    
-    
+
+
 class Product(forms.Form):
     name = forms.CharField(max_length=255)
+    description = forms.CharField(max_length=255)
+    price = forms.FloatField()
+    count = forms.IntegerField()
+    item_number = forms.CharField(max_length=255)
+    category = forms.IntegerField()
+    img = forms.CharField(max_length=255)
+
+
+class ProductUpdate(forms.Form):
     description = forms.CharField(max_length=255)
     price = forms.FloatField()
     count = forms.IntegerField()
@@ -72,3 +81,4 @@ class Category(forms.Form):
 class Shop(forms.Form):
     name = forms.CharField(max_length=255)
     location = forms.CharField(max_length=255)
+
