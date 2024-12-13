@@ -12,11 +12,12 @@
                         <ul>
                             <p> Название   Количество   Цена  Стоимость</p>
                         {% for item in car %}
-                            <li> {{item[1]}}  {{item[2]}}  {{item[3]}}  {{item[2]*item[3]}} <a href="?delet={{item[0]}}"> Удалить из карзины</a> </li>
+                            <li> {{item.name}}  {{item.count}}  {{item.price}}  {{item.price}} <a href="?delet={{item.id}}"> Удалить из карзины</a> </li>
                         {% endfor %}
                         </ul>
                         <label for="shop">Выберите магазин:</label>
                         <select name="shop" id="shop">
+                            <option value="">       </option>
                         {% for item in shops %}
                             <option value={{item.id}}> {{item.name}} / {{item.location}} </option>
                         {% endfor %}

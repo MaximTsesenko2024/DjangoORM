@@ -8,7 +8,7 @@
     <h1>Покупка {{product.name}}</h1>
     <p> {{ message }} </p>
 
-            <form method="post"">
+            <form method="post">
                     {% csrf_token %}
                     <p>Описание: {{product.description}}</p>
                      <p>Цена: {{product.price}}</p>

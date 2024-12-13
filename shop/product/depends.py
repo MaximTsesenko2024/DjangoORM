@@ -6,6 +6,8 @@ from .models import User
 
 
 def find_user_by_id(user_id: int = -1) -> User | None:
+    if isinstance(user_id, str):
+        user_id=int(user_id)
     if user_id < 0:
         return None
     user = User.objects.get(id=user_id)
