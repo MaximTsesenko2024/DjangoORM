@@ -504,6 +504,7 @@ def select_products_list_get(request: WSGIRequest):
         for product in products:
             #print(product.name)
             image_str, format_file = image_to_str(product, 'list')
+            print(image_str, format_file)
             prod_item = ProductView_list(product.name, product.price, product.id, image_str, format_file)
             product_list.append(prod_item)
             paginator = Paginator(product_list, 4)
@@ -540,38 +541,34 @@ def create_product(request: WSGIRequest):
             price = float(request.POST.get('price'))
             count = int(request.POST.get('count'))
             category = request.POST.get('category')
-            # for filename, file in request.FILES.items():
-            #     name_f = request.FILES[filename].name
-            #     print(name_f)
-            # file = request.FILES['btn-add_product']
-            # file = None
+            file=request.FILES['img']
             print(name, item_number, description)
             if name == '':
                 info['message'] = 'Поле имя не может быть пустым'
                 return render(request, 'product/add_product_page.html', info)
-            # try:
-            #     if not os.path.exists("./product/templates/product/image/" + name):
-            #         os.mkdir("./product/templates/product/image/" + name)
-            #
-            #     contents = file.read()
-            #     file_name = file.filename
-            #     with open("./product/templates/product/image/" + name + '/' + file_name, "wb") as f:
-            #         f.write(contents)
-            # except Exception:
-            #     raise HTTPException(status_code=500, detail='Something went wrong')
-            # finally:
-            #     file.close()
-            # image = Image.open("./product/templates/product/image/" + name + '/' + file_name)
-            # image.thumbnail(size=(100, 100))
-            # image.save("./product/templates/product/image/" + name + '/small_' + file_name)
+            try:
+                if not os.path.exists("./product/templates/product/image/" + name):
+                    os.mkdir("./product/templates/product/image/" + name)
+
+                contents = file.read()
+                file_name = file.name
+                with open("./product/templates/product/image/" + name + '/' + file_name, "wb") as f:
+                    f.write(contents)
+            except Exception:
+                raise HTTPException(status_code=500, detail='Something went wrong')
+            finally:
+                file.close()
+            image = Image.open("./product/templates/product/image/" + name + '/' + file_name)
+            image.thumbnail(size=(100, 100))
+            image.save("./product/templates/product/image/" + name + '/small_' + file_name)
             if count > 0:
                 bl = True
             else:
                 bl = False
             ProductModel.objects.create(name=name, description=description,
                                         price=price, count=count,
-                                        is_active=count > 0, category=int(category), item_number=item_number,
-                                        img='')
+                                        is_active=count > 0, category=Categories.objects.get(id=int(category)), item_number=item_number,
+                                        img=file_name)
             return HttpResponseRedirect('/product/list')
     return render(request, 'product/add_product_page.html', info)
 
@@ -631,7 +628,7 @@ def update_image_product(request: WSGIRequest, id_product: int = -1):
             except Exception:
                 raise HTTPException(status_code=500, detail='Something went wrong')
             finally:
-                file.file.close()
+                file.close()
             image = Image.open("./product/templates/product/image/" + product.name + '/' + file_name)
             image.thumbnail(size=(100, 100))
             image.save("./product/templates/product/image/" + product.name + '/small_' + file_name)

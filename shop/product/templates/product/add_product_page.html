@@ -9,7 +9,7 @@
         <p> {{ message }} </p>
         <p></p>
         {% if display %}
-            <form method="post" >
+            <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                     <label for="name"> Введите название </label>
                     <input type="text" id="name"  name="name" maxlength="255" aria-describedby="btn-add_product">
@@ -29,12 +29,13 @@
                     <p></p>
                     <label for="category">Категория товара:</label>
                     <select name="category" id="category">
-							<option value="-1"> Нет </option>
                         {% for item in categories %}
                             <option value={{item.id}}> {{item.name}} </option>
                         {% endfor %}
                     </select>
                     <p></p>
+                        <label for="img"> Добавить изображение </label>
+                        <input type="file" id="img" name="img">
                     <p></p>
                     <button type="submit" id="btn-add_product" >Добавить</button>
 

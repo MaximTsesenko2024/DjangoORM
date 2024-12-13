@@ -12,7 +12,7 @@
         </form>
                     <ul>
         {% for product in page_obj %}
-            <li><img src="data:image/{{product.format_file}}; base64,  {{product.image_str}} | safe " alt="{{ product.name}}"/>
+            <li><img src="data:image/{{product.format_file}}; base64,  {{product.image_str | safe }}" alt="{{ product.name}}"/>
                   <a href="/product/{{product.id}}"> {{ product.name}} </a> Цена: {{product.price}} рублей</li>
         {% empty %}
             <p>Нет товаров</p>
