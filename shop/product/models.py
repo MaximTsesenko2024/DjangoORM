@@ -1,7 +1,11 @@
 from django.db import models
 
+
 # Create your models here.
 class User(models.Model):
+    """
+    Модель пользователя в системе
+    """
     # имя пользователя в системе
     username = models.CharField(max_length=255, unique=True)
     # адрес электронной почты
@@ -22,11 +26,17 @@ class User(models.Model):
 
 
 class Categories(models.Model):
+    """
+    Модель категории товара в системе
+    """
     name = models.CharField(max_length=255, unique=True)
     parent = models.IntegerField(default=-1)
 
 
 class ProductModel(models.Model):
+    """
+    Модель товара в системе
+    """
     # наименование товара
     name = models.CharField(max_length=256)
     # Описание товара
@@ -46,25 +56,21 @@ class ProductModel(models.Model):
     # категория товаров
     category = models.ForeignKey('Categories', on_delete=models.CASCADE)
 
+
 class Shops(models.Model):
+    """
+    Модель магазина в системе
+    """
     name = models.CharField(max_length=255, unique=True)
     location = models.TextField()
+    is_active = models.BooleanField(default=True)
 
 
 class BuyerProd(models.Model):
+    """
+    Модель покупки товара
+    """
     id_operation = models.IntegerField(null=False)
     user = models.ForeignKey('User', on_delete=models.CASCADE)
     product = models.ForeignKey('ProductModel', on_delete=models.CASCADE)
-
     id_shop = models.ForeignKey('Shops', on_delete=models.CASCADE)
-
-"""
-
-
-
-
-
-class Shops(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    location = models.TextField()
-"""

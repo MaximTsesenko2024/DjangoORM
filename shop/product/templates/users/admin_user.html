@@ -17,14 +17,17 @@
             <p></p>
             <p>Сотрудник: {% if user.is_staff %} Да {% else %} Нет {% endif %}</p>
             <p></p>
+            <p>Администратор: {% if user.admin %} Да {% else %} Нет {% endif %}</p>
+            <p></p>
              <p>Дата создания: {{user.created_at}}</p>
             <p></p>
             <p>Дата последнего обновления: {{user.updated_at}}</p>
             <p></p>
-            <a href="\user\list"><button>Список пользователей</button></a>
         <a href="\user\list\update\{{user.id}}"><button>Изменить</button></a>
         <p></p>
-        <a href="\user\delete"><button>Удалить</button></a>
+        <a href="\user\list"><button>Список пользователей</button></a>
+        <p></p>
+        <a href="\user\list\delete\{{user.id}}"><button>Удалить</button></a>
         <p></p>
         <p><a href="\user\logout"><button>Выход</button></a></p>
     {% else %}

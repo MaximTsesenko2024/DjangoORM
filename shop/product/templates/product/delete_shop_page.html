@@ -10,7 +10,7 @@
         <p></p>
         {% if display %}
             <form method="post">
-
+                {% csrf_token %}
                         <h2> Название: {{shop.name}}</h2>
 
                     <p>Адрес магазина: {{shop.location}}</p>

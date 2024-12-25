@@ -6,16 +6,25 @@ from .models import User
 
 
 def find_user_by_id(user_id: int = -1) -> User | None:
+    """
+    Поиск пользователя по идентификационному номеру.
+    :param user_id: Идентификационный номер пользователя.
+    :return: Объект user если пользователь в базе данных найден, None - в противном случае
+    """
     if isinstance(user_id, str):
         user_id=int(user_id)
     if user_id < 0:
         return None
     user = User.objects.get(id=user_id)
-    print(type(user))
     return user
 
 
 def get_token(request: WSGIRequest):
+    """
+    Получение значения токена из запроса
+    :param request: Запрос
+    :return: Токен если он имеется и None в противном случае.
+    """
     token = request.COOKIES.get('users_access_token')
     if not token:
         return None
@@ -23,6 +32,12 @@ def get_token(request: WSGIRequest):
 
 
 def get_current_user(request: WSGIRequest):
+    """
+    Получение пользователя по токену.
+    :param request: Запрос
+    :return: Пользователь - в случае наличия токена и наличия идентификатора пользователя в базе данных, или
+             None - в противном случае.
+    """
     token = get_token(request)
     if token is None:
         return None

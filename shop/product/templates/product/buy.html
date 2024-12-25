@@ -12,7 +12,7 @@
                         <ul>
                             <p> Название   Количество   Цена  Стоимость</p>
                         {% for item in car %}
-                            <li> {{item.name}}  {{item.count}}  {{item.price}}  {{item.price}} <a href="?delet={{item.id}}"> Удалить из карзины</a> </li>
+                            <li> {{item.name}}  {{item.count}}  {{item.price}}  {{item.price}} <a href="?delet={{item.number}}"> Удалить из карзины</a> </li>
                         {% endfor %}
                         </ul>
                         <label for="shop">Выберите магазин:</label>
