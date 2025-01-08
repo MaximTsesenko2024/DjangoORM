@@ -1,7 +1,9 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css"  href="   {% static 'style.css' %}" >
     <title> {{title}} </title>
 </head>
 <body>
@@ -9,13 +11,22 @@
         <form>
             <input type="search" id="mySearch" name="q" placeholder="Поиск товаров" size="30" />
             <button>Поиск</button>
-        </form>
+                        <div class="dropdown">
+                    <button class="dropbtn">Категории</button>
+                    <div class="dropdown-content">
+                        {% for category in categories %}
+                            <a href="?category={{category.id}}">{{category.name}}</a>
+                        {% endfor %}
+                    </div>
+            </div>
+            </form>
                     <ul>
         {% for product in page_obj %}
             <li><img src="data:image/{{product.format_file}}; base64,  {{product.image_str | safe }}" alt="{{ product.name}}"/>
-                  <a href="/product/{{product.id}}"> {{ product.name}} </a> Цена: {{product.price}} рублей</li>
-        {% empty %}
+                  <a href="/product/{{product.id}}"> {{product.name}} </a> Цена: {{product.price}} рублей</li>
+        {% if empty %}
             <p>Нет товаров</p>
+        {% endif %}
         {% endfor %}
             </ul>
                  <div class="pagination">

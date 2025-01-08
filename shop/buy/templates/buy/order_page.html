@@ -1,0 +1,26 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css"  href="   {% static 'style.css' %}" >
+    <title> {{title}} </title>
+</head>
+<body>
+        <h1> {{title}} {{order.number}} </h1>
+        <h2>{{message}}</h2>
+        <h2>Магазин: {{order.shop.name}}</h2>
+        {% if display %}
+
+                    <ul>
+        {% for i, v in order.prod_list %}
+            <li><a href="/product/{{i.id}}"> {{i.name}} </a> Количество товара: {{v}}</li>
+        {% endfor %}
+            </ul>
+        {% endif %}
+        {% if used and is_staff %}
+            <p><a href="?used=1"> Выдать </a></p>
+        {% endif %}
+        <p><a href="/main"> На главную</a></p>
+</body>
+</html>

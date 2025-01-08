@@ -1,62 +1,22 @@
-from django.core.handlers.wsgi import WSGIRequest
-from jwt import PyJWTError, decode
-from datetime import datetime, timezone
-from .autf import SECRET_KEY, ALGORITHM
-from .models import User
+from .models import ProductModel
 
 
-def find_user_by_id(user_id: int = -1) -> User | None:
+def get_product(product_id: int) -> ProductModel | None:
     """
-    Поиск пользователя по идентификационному номеру.
-    :param user_id: Идентификационный номер пользователя.
-    :return: Объект user если пользователь в базе данных найден, None - в противном случае
+    Получение объекта продукт по идентификатору
+    :param product_id: идентификатор объекта продукт
+    :return: объекта продукт или None
     """
-    if isinstance(user_id, str):
-        user_id=int(user_id)
-    if user_id < 0:
-        return None
-    user = User.objects.get(id=user_id)
-    return user
+    return ProductModel.objects.filter(id=product_id).first()
 
 
-def get_token(request: WSGIRequest):
+def update_count_product(product_id: int, update_count: int) -> bool:
     """
-    Получение значения токена из запроса
-    :param request: Запрос
-    :return: Токен если он имеется и None в противном случае.
+    Изменение количества товара
+    :param product_id: Идентификатор товара.
+    :param update_count: Изменение количества + увеличение, - уменьшение.
+    :return статус операции
     """
-    token = request.COOKIES.get('users_access_token')
-    if not token:
-        return None
-    return token
-
-
-def get_current_user(request: WSGIRequest):
-    """
-    Получение пользователя по токену.
-    :param request: Запрос
-    :return: Пользователь - в случае наличия токена и наличия идентификатора пользователя в базе данных, или
-             None - в противном случае.
-    """
-    token = get_token(request)
-    if token is None:
-        return None
-    try:
-        payload = decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except PyJWTError:
-        return None
-
-    expire = payload.get('exp')
-    expire_time = datetime.fromtimestamp(int(expire), tz=timezone.utc)
-    if (not expire) or (expire_time < datetime.now(timezone.utc)):
-        return None
-
-    user_id = payload.get('sub')
-    if not user_id:
-        return None
-
-    user = find_user_by_id(user_id=int(user_id))
-    user = user
-    if not user:
-        return None
-    return user
+    product = ProductModel.objects.filter(id=product_id).first()
+    ProductModel.objects.filter(id=product_id).update(count=product.count+update_count)
+    return True

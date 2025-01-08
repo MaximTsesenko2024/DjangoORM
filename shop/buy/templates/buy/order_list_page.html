@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css"  href="   {% static 'style.css' %}" >
+    <title> {{title}} </title>
+</head>
+<body>
+        <h1> {{title}}  </h1>
+        <h2>{{message}}</h2>
+        {% if display %}
+        <form>
+            <input type="search" id="mySearch" name="number" placeholder="Поиск заказа" size="30" />
+            <button>Поиск</button>
+            </form>
+
+                    <ul>
+        {% for order in page_obj %}
+            <li> <a href="/buy/order/number/{{order.number}}"> {{order.number}} </a>
+                    {% for prod, count in order.prod_list %}
+                        <li> {{prod.name}} </li>
+                    {% endfor %}
+            </li>
+        {% if empty %}
+            <p>Нет товаров</p>
+        {% endif %}
+        {% endfor %}
+            </ul>
+                 <div class="pagination">
+        <p>Страницы:</p>
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            {% endif %}
+            {% for i in page_obj.paginator.page_range %}
+                {% if page_obj.number == i %}
+                    <a href="#"> {{i}}</a>
+                {% else %}
+                    <a href="?page={{i}}"> {{i}}</a>
+                {% endif %}
+             {% endfor %}
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">Next</a>
+            {% endif %}
+    </div>
+        {% endif %}
+        <p><a href="/main"> На главную</a></p>
+</body>
+</html>

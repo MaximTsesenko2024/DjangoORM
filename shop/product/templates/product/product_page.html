@@ -21,7 +21,7 @@
             <p>Категория: {{product.category.name}} </p>
             <p>Акция: {% if product.action %} Участвует {% else %} Нет {% endif %}</p>
             {% if user %}
-            <a href="/product/car/{{product.id}}"> Купить</a>
+            <a href="/buy/car/{{product.id}}"> Купить</a>
             {% else %}
             <p>Вы не вошли в систему</p>
             {% endif %}
