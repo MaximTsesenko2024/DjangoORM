@@ -231,7 +231,8 @@ def get_select_order(request: WSGIRequest, number: int):
     number = int(number)
     info['display'] = True
     order_prod_list = get_product_list_by_order_number(number)
-    order = order_list(order_prod_list)
+    orders = order_list(order_prod_list)
+    order=orders[0]
     if order_prod_list is None:
         info['message'] = 'Заказ не найден'
     else:

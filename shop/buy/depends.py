@@ -55,7 +55,5 @@ def order_list(buy_prods: list):
         if buy_prods[i].id_operation != orders_list[-1].number:
             orders_list.append(Order(buy_prods[i].id_operation, buy_prods[i].is_used, buy_prods[i].id_shop))
         orders_list[-1].add_prod(buy_prods[i].product, buy_prods[i].count)
-    if len(orders_list) == 1:
-        return orders_list[0]
     return orders_list
 
